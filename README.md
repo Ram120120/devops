@@ -75,16 +75,19 @@ The workflow in `.github/workflows/ci-cd.yml` performs:
 
 | Secret | Description |
 |--------|-------------|
+| `GHCR_TOKEN` | Personal access token for GitHub Container Registry belonging to `poojasingh9490` with at least `write:packages` scope. |
 | `KUBE_CONFIG_DATA` | Base64‑encoded kubeconfig with permissions to manage the `wisecow` namespace. |
 
-No extra registry credentials are needed when using GHCR; the workflow uses the built-in `GITHUB_TOKEN` with `packages: write` permission.
+> Create the PAT under the `poojasingh9490` account, then store it as a repo secret named `GHCR_TOKEN`.  
+> Encode the kubeconfig with `base64 -w0 < kubeconfig` before pasting it into the secret field.
 
 ### Enable the workflow
 
 1. Ensure the repository is **public** (as per project requirement).
 2. Configure `Actions > General` permissions to allow GitHub Actions to create and approve pull requests if you use environments.
-3. Add `KUBE_CONFIG_DATA` in `Settings > Secrets and variables > Actions`.
-4. Adjust the ingress host and image registry in `k8s/` to match your environment.
+3. Add the `GHCR_TOKEN` secret (see table above) so the workflow can push to `ghcr.io/poojasingh9490`.
+4. Add `KUBE_CONFIG_DATA` in `Settings > Secrets and variables > Actions`.
+5. Adjust the ingress host and image registry in `k8s/` to match your environment.
 
 ## TLS considerations
 
