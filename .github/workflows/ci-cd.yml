@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: pooja_assignment/wisecow
+  IMAGE_NAME: poojasingh9490/wisecow
 
 jobs:
   build:
@@ -64,6 +64,7 @@ jobs:
 
       - name: Deploy manifests
         env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
           IMAGE_SHA: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           KUBE_NAMESPACE: wisecow
         run: |

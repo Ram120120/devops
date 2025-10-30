@@ -8,5 +8,5 @@ resources:
   - ingress.yaml
 images:
   - name: wisecow-app
-    newName: ghcr.io/your-org/wisecow
+    newName: ghcr.io/poojasingh9490/wisecow
     newTag: latest
