@@ -1,7 +1,8 @@
 FROM debian:stable-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    SRVPORT=4499
+    SRVPORT=4499 \
+    PATH="/usr/games:${PATH}"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
