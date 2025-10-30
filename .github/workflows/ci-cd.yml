@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/wisecow
+  IMAGE_NAME: ${{ toLower(format('{0}/wisecow', github.repository_owner)) }}
 
 jobs:
   build:
