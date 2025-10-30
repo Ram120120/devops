@@ -42,14 +42,24 @@ Manifests live in `k8s/` and are bundled through Kustomize.
    ```
    If you use cert-manager, swap the secret creation with an appropriate `Certificate`/`Issuer` definition.
 
-3. **Deploy**  
+3. **Authorize image pulls (if your registry is private)**  
+   Create a Docker registry secret containing your GHCR PAT so the cluster can pull images:
    ```bash
-   kubectl apply -k k8s
-   kubectl -n wisecow get all
+   kubectl -n wisecow create secret docker-registry ghcr-cred \
+     --docker-server=ghcr.io \
+     --docker-username=ram120120 \
+     --docker-password=$PAT_WITH_WRITE_PACKAGES
    ```
+   Skip this when the image repository is public.
 
-4. **Validate TLS ingress**  
-   Point DNS for `wisecow.example.com` (or your host) at the ingress controller and browse to `https://<host>/`.
+4. **Deploy**  
+  ```bash
+  kubectl apply -k k8s
+  kubectl -n wisecow get all
+  ```
+
+5. **Validate TLS ingress**  
+   Point DNS for `wisecow.local` (or your host) at the ingress controller and browse to `https://<host>/`.
 
 Resources created:
 - `Namespace` `wisecow`
@@ -75,17 +85,17 @@ The workflow in `.github/workflows/ci-cd.yml` performs:
 
 | Secret | Description |
 |--------|-------------|
-| `GHCR_TOKEN` | Personal access token for GitHub Container Registry belonging to `poojasingh9490` with at least `write:packages` scope. |
+| `GHCR_TOKEN` | Personal access token for GitHub Container Registry belonging to `ram120120` with at least `write:packages` scope. |
 | `KUBE_CONFIG_DATA` | Base64‑encoded kubeconfig with permissions to manage the `wisecow` namespace. |
 
-> Create the PAT under the `poojasingh9490` account, then store it as a repo secret named `GHCR_TOKEN`.  
+> Create the PAT under the `ram120120` account, then store it as a repo secret named `GHCR_TOKEN`.  
 > Encode the kubeconfig with `base64 -w0 < kubeconfig` before pasting it into the secret field.
 
 ### Enable the workflow
 
 1. Ensure the repository is **public** (as per project requirement).
 2. Configure `Actions > General` permissions to allow GitHub Actions to create and approve pull requests if you use environments.
-3. Add the `GHCR_TOKEN` secret (see table above) so the workflow can push to `ghcr.io/poojasingh9490`.
+3. Add the `GHCR_TOKEN` secret (see table above) so the workflow can push to `ghcr.io/ram120120`.
 4. Add `KUBE_CONFIG_DATA` in `Settings > Secrets and variables > Actions`.
 5. Adjust the ingress host and image registry in `k8s/` to match your environment.
 
