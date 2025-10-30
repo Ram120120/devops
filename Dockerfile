@@ -10,6 +10,7 @@ RUN apt-get update \
         ca-certificates \
         cowsay \
         fortune-mod \
+        fortunes-min \
         netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
