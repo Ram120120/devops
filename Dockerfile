@@ -16,7 +16,9 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY wisecow.sh /app/wisecow.sh
-RUN chmod +x /app/wisecow.sh
+RUN chmod +x /app/wisecow.sh \
+    && useradd --system --home /nonexistent --shell /usr/sbin/nologin pooja \
+    && chown -R pooja:pooja /app
 
 EXPOSE 4499
 
