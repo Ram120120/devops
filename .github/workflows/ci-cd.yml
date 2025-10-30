@@ -44,7 +44,7 @@ jobs:
 
   deploy:
     name: Deploy to Kubernetes
-    runs-on: [self-hosted, minikube]
+    runs-on: [self-hosted, Linux]
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
