@@ -1,28 +1,98 @@
-# Cow wisdom web server
+# Wisecow on Kubernetes
 
-## Prerequisites
+Wisecow is a tiny Bash web server that serves “wise” thoughts rendered through `cowsay`. This repository provides everything required to ship the application as a container and run it on Kubernetes with TLS termination and automated CI/CD.
 
+## Application
+
+- `wisecow.sh` runs an HTTP listener (default port `4499`) and streams fortunes back in a cow-themed ASCII banner.
+- Ports and FIFO paths can be overridden through the `SRVPORT` and `RSPFILE` environment variables.
+
+### Run without containers
+
+```bash
+sudo apt install fortune-mod cowsay netcat-openbsd -y
+./wisecow.sh
 ```
-sudo apt install fortune-mod cowsay -y
+
+Visit `http://localhost:4499`.
+
+### Run with Docker
+
+```bash
+docker build -t wisecow:local .
+docker run --rm -p 4499:4499 wisecow:local
 ```
 
-## How to use?
+Override the listening port with `-e SRVPORT=8080 -p 8080:8080` if required.
 
-1. Run `./wisecow.sh`
-2. Point the browser to server port (default 4499)
+## Kubernetes deployment
 
-## What to expect?
-![wisecow](https://github.com/nyrahul/wisecow/assets/9133227/8d6bfde3-4a5a-480e-8d55-3fef60300d98)
+Manifests live in `k8s/` and are bundled through Kustomize.
 
-# Problem Statement
-Deploy the wisecow application as a k8s app
+1. **Set the container registry location**  
+   Update `k8s/kustomization.yaml` so `newName` points at the image location you push to (defaults to `ghcr.io/your-org/wisecow`).
 
-## Requirement
-1. Create Dockerfile for the image and corresponding k8s manifest to deploy in k8s env. The wisecow service should be exposed as k8s service.
-2. Github action for creating new image when changes are made to this repo
-3. [Challenge goal]: Enable secure TLS communication for the wisecow app.
+2. **Create a TLS secret**  
+   Provide a certificate that matches the ingress host (defaults to `wisecow.example.com`):
+   ```bash
+   kubectl create namespace wisecow
+   kubectl -n wisecow create secret tls wisecow-tls \
+     --cert=/path/to/cert.pem \
+     --key=/path/to/key.pem
+   ```
+   If you use cert-manager, swap the secret creation with an appropriate `Certificate`/`Issuer` definition.
 
-## Expected Artifacts
-1. Github repo containing the app with corresponding dockerfile, k8s manifest, any other artifacts needed.
-2. Github repo with corresponding github action.
-3. Github repo should be kept private and the access should be enabled for following github IDs: nyrahul
+3. **Deploy**  
+   ```bash
+   kubectl apply -k k8s
+   kubectl -n wisecow get all
+   ```
+
+4. **Validate TLS ingress**  
+   Point DNS for `wisecow.example.com` (or your host) at the ingress controller and browse to `https://<host>/`.
+
+Resources created:
+- `Namespace` `wisecow`
+- `Deployment` `wisecow` (2 replicas, HTTP readiness/liveness probes)
+- `Service` `wisecow` (port 80 → pod port 4499)
+- `Ingress` `wisecow` with TLS termination (`wisecow-tls` secret)
+
+## GitHub Actions CI/CD
+
+The workflow in `.github/workflows/ci-cd.yml` performs:
+
+1. **Build & Push** (all pushes and PRs targeting `main`)
+   - Builds the Docker image.
+   - Tags it with `ghcr.io/<owner>/wisecow:<git-sha>` and `:latest`.
+   - Pushes to GitHub Container Registry (GHCR).
+
+2. **Deploy** (pushes to `main` only)
+   - Applies the manifests from `k8s/`.
+   - Updates the running deployment to the freshly pushed image.
+   - Waits for rollout completion.
+
+### Required repository secrets
+
+| Secret | Description |
+|--------|-------------|
+| `KUBE_CONFIG_DATA` | Base64‑encoded kubeconfig with permissions to manage the `wisecow` namespace. |
+
+No extra registry credentials are needed when using GHCR; the workflow uses the built-in `GITHUB_TOKEN` with `packages: write` permission.
+
+### Enable the workflow
+
+1. Ensure the repository is **public** (as per project requirement).
+2. Configure `Actions > General` permissions to allow GitHub Actions to create and approve pull requests if you use environments.
+3. Add `KUBE_CONFIG_DATA` in `Settings > Secrets and variables > Actions`.
+4. Adjust the ingress host and image registry in `k8s/` to match your environment.
+
+## TLS considerations
+
+- The provided ingress assumes an NGINX ingress controller. Update annotations as needed for other controllers.
+- Certificates can be self-signed for testing but must match the ingress host. For production, prefer ACME via cert-manager or another trusted issuer.
+
+## Next steps
+
+- Hook ingress DNS to your cluster.
+- Optionally tighten security (restrict `fortune` database, add PodSecurity standards, resource quotas).
+- Extend the workflow with smoke tests before rollout if desired.
